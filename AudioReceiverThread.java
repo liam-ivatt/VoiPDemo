@@ -280,6 +280,10 @@ public class AudioReceiverThread implements Runnable{
                             ByteBuffer packetBuffer = ByteBuffer.wrap(packet.getData());
                             int packetNumber = packetBuffer.getInt();
 
+                            if (expectedPacketNumber == 0) {
+                                expectedPacketNumber = packetNumber;
+                            }
+
                             // If the packet is the expected one, process it
                             if (packetNumber == expectedPacketNumber) {
                                 jitterBuffer.poll(); // Remove the packet from the buffer
@@ -370,15 +374,6 @@ public class AudioReceiverThread implements Runnable{
     }
 
     //Socket 4
-    public static byte[] decrypt(byte[] data, int shift, byte[] xorKey) {
-        byte[] decrypted = new byte[data.length];
-        for (int i = 0; i < data.length; i++) {
-            byte shiftedByte = (byte) ((data[i] - shift + 256) % 256);
-            decrypted[i] = (byte) (shiftedByte ^ xorKey[i % xorKey.length]);
-        }
-        return decrypted;
-    }
-
     public static void datagramReceived4Goated() {
         int PORT = 55555;
 
@@ -393,24 +388,24 @@ public class AudioReceiverThread implements Runnable{
                 receiving_socket.receive(packet);
 
                 // Decrypt the entire packet (header + audio data)
-                byte[] decryptedData = decrypt(packet.getData(), SHIFT, XOR_KEY2);
+                byte[] packet2 = ByteBuffer.wrap(packet.getData()).array();
 
                 // Extract checksum from header
-                int receivedChecksum = ((decryptedData[0] & 0xFF) << 24) |
-                        ((decryptedData[1] & 0xFF) << 16) |
-                        ((decryptedData[2] & 0xFF) << 8) |
-                        (decryptedData[3] & 0xFF);
+                int receivedChecksum = ((packet2[0] & 0xFF) << 24) |
+                        ((packet2[1] & 0xFF) << 16) |
+                        ((packet2[2] & 0xFF) << 8) |
+                        (packet2[3] & 0xFF);
 
                 // Calculate checksum on decrypted audio data
                 int calculatedChecksum = 0;
-                for (int i = 4; i < decryptedData.length; i++) {
-                    calculatedChecksum += decryptedData[i] & 0xFF;
+                for (int i = 4; i < packet2.length; i++) {
+                    calculatedChecksum += packet2[i] & 0xFF;
                 }
 
                 // Validate checksum and play audio
                 if (receivedChecksum == calculatedChecksum) {
-                    byte[] audioData = new byte[decryptedData.length - 4]; // Exclude header
-                    System.arraycopy(decryptedData, 4, audioData, 0, audioData.length);
+                    byte[] audioData = new byte[packet2.length - 4]; // Exclude header
+                    System.arraycopy(packet2, 4, audioData, 0, audioData.length);
                     player.playBlock(audioData);
                     previousValidPacket = audioData; // Store valid packet
                 } else if (previousValidPacket != null) {
@@ -424,7 +419,6 @@ public class AudioReceiverThread implements Runnable{
             e.printStackTrace();
         }
     }
-
 
     public static void textDummy(){
         int PORT = 55555;
@@ -544,7 +538,7 @@ public class AudioReceiverThread implements Runnable{
 
     public void run (){
 
-        datagramReceived4Goated();
+        datagramReceived3Goated();
 
     }
 }

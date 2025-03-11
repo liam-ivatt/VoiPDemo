@@ -304,20 +304,11 @@ public class AudioSenderThread implements Runnable{
     }
 
     //Socket 4
-    public static byte[] encrypt(byte[] data, int shift, byte[] xorKey) {
-        byte[] encrypted = new byte[data.length];
-        for (int i = 0; i < data.length; i++) {
-            byte xorByte = (byte) (data[i] ^ xorKey[i % xorKey.length]);
-            encrypted[i] = (byte) ((xorByte + shift) % 256);
-        }
-        return encrypted;
-    }
-
     public static void datagramSocket4Goated() {
         int PORT = 55555;
 
         try {
-            InetAddress clientIP = InetAddress.getByName("139.222.97.225");
+            InetAddress clientIP = InetAddress.getByName("139.222.98.115");
             DatagramSocket4 sending_socket = new DatagramSocket4();
             AudioRecorder recorder = new AudioRecorder();
 
@@ -336,11 +327,8 @@ public class AudioSenderThread implements Runnable{
                 packetData[3] = (byte) checksum;               // Fourth byte of checksum
                 System.arraycopy(block, 0, packetData, 4, block.length); // Add audio data
 
-                // Encrypt the entire packet (header + audio data)
-                byte[] encryptedData = encrypt(packetData, SHIFT, XOR_KEY2);
-
                 // Send encrypted packet
-                DatagramPacket packet = new DatagramPacket(encryptedData, encryptedData.length, clientIP, PORT);
+                DatagramPacket packet = new DatagramPacket(packetData, packetData.length, clientIP, PORT);
                 sending_socket.send(packet);
             }
         } catch (Exception e) {
@@ -350,7 +338,7 @@ public class AudioSenderThread implements Runnable{
 
     public void run () {
 
-        datagramSocket4Goated();
+        datagramSocket3Goated();
 
     }
 }
