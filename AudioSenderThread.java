@@ -133,6 +133,78 @@ public class AudioSenderThread implements Runnable{
         }
     }
 
+
+    public static void datagramSocket1attempt() {
+        int PORT = 55555;
+
+        // Diffie-Hellman Parameters
+        long p = 104729;                            // Larger prime number
+        long g = 12345000;                             // Larger base
+        long senderPrivate = 6789;                  // Sender's private key
+        long SPV = power(g, senderPrivate, p);       // Sender's public value
+        long RPV;                                    // Receiver's public value
+        long sharedKey = 0;                         // Shared secret key
+
+        try {
+            InetAddress clientIP = InetAddress.getByName("localhost");
+            DatagramSocket sending_socket = new DatagramSocket();
+
+            Thread.sleep(5000);
+            //sending_socket.setSoTimeout(5000);
+
+            // Send sender's public value (R1) to the receiver
+            String R1String = String.valueOf(SPV);
+            DatagramPacket packet = new DatagramPacket(R1String.getBytes(), R1String.length(), clientIP, PORT);
+            sending_socket.send(packet);
+
+            // Receive receiver's public value (R2)
+            byte[] buffer = new byte[512];
+            packet = new DatagramPacket(buffer, buffer.length);
+            sending_socket.receive(packet);
+            RPV = Long.parseLong(new String(packet.getData()).trim());
+
+            // Calculate shared secret key
+            sharedKey = power(RPV, senderPrivate, p);
+            System.out.println("Sender's calculated shared key: " + sharedKey);
+
+            //sending_socket.setSoTimeout(0);
+
+            // Now proceed with audio data transmission
+            AudioRecorder recorder = new AudioRecorder();
+
+            while (true) {
+                try {
+                    byte[] block = recorder.getBlock();
+
+                    // Generate stronger pseudo-random data based on the shared key
+                    byte[] randomData = new byte[block.length];
+                    for (int i = 0; i < randomData.length; i++) {
+                        randomData[i] = (byte) ((sharedKey * (i + 1) * 37) % 256); // Enhanced randomness
+                    }
+
+                    // Encrypt the packet using the mask
+                    for (int i = 0; i < block.length; i++) {
+                        block[i] = (byte) (block[i] ^ randomData[i]);
+                    }
+
+                    // Send the encrypted packet
+                    packet = new DatagramPacket(block, block.length, clientIP, PORT);
+                    sending_socket.send(packet);
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (sending_socket != null) {
+                sending_socket.close();
+            }
+        }
+    }
+
+
     //Socket 2
     public static void printMatrix(byte[][][] matrix) {
         for (int i = 0; i < matrix.length; i++) {
@@ -335,7 +407,7 @@ public class AudioSenderThread implements Runnable{
 
     public void run () {
 
-        datagramSocket4();
+        datagramSocket1attempt();
 
     }
 }
