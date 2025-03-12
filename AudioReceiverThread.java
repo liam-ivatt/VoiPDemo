@@ -220,7 +220,7 @@ public class AudioReceiverThread implements Runnable{
                     System.out.print("  null ");
                 }
             }
-            System.out.println();
+            System.out.println(); // Move to the next row
         }
     }
 
@@ -240,6 +240,7 @@ public class AudioReceiverThread implements Runnable{
         AudioPlayer player;
         int currentBatch = 0;
         byte[] lastPacket = new byte[512];
+        int missCount = 0;
 
         try {
             player = new AudioPlayer();
@@ -279,8 +280,19 @@ public class AudioReceiverThread implements Runnable{
                                 player.playBlock(receivedArray[i][j]);
                                 lastPacket = receivedArray[i][j];
                                 System.out.println("Playing audio from original position [" + i + "][" + j + "]");
+                                missCount = 0;
                             } else {
-                                player.playBlock(lastPacket);
+
+                                byte[] echo;
+                                echo = Arrays.copyOf(lastPacket, lastPacket.length);
+
+                                for (int k = 0; k < echo.length; k++) {
+                                    echo[k] = (byte) (echo[k] * 0.7);
+                                }
+
+                                player.playBlock(echo);
+                                lastPacket = echo;
+                                missCount++;
                                 System.out.println("Missing packet at original position [" + i + "][" + j + "]");
                             }
                         }
@@ -601,7 +613,7 @@ public class AudioReceiverThread implements Runnable{
 
     public void run (){
 
-        datagramReceived1NoAuth();
+        datagramReceived3();
 
     }
 }

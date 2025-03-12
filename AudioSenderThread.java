@@ -317,7 +317,7 @@ public class AudioSenderThread implements Runnable{
 
         InetAddress clientIP = null;
         try {
-            clientIP = InetAddress.getByName("139.222.97.225");
+            clientIP = InetAddress.getByName("139.222.99.27");
         } catch (UnknownHostException e) {
             System.out.println("ERROR: TextSender: Could not find client IP");
             e.printStackTrace();
@@ -402,7 +402,7 @@ public class AudioSenderThread implements Runnable{
 
     public void run () {
 
-        datagramSocket1NoAuth();
+        datagramSocket3();
 
     }
 }
