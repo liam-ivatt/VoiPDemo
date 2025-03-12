@@ -133,8 +133,7 @@ public class AudioSenderThread implements Runnable{
         }
     }
 
-
-    public static void datagramSocket1attempt() {
+    public static void datagramSocket1NoAuth() {
         int PORT = 55555;
 
         // Diffie-Hellman Parameters
@@ -150,7 +149,6 @@ public class AudioSenderThread implements Runnable{
             DatagramSocket sending_socket = new DatagramSocket();
 
             Thread.sleep(5000);
-            //sending_socket.setSoTimeout(5000);
 
             // Send sender's public value (R1) to the receiver
             String R1String = String.valueOf(SPV);
@@ -166,8 +164,6 @@ public class AudioSenderThread implements Runnable{
             // Calculate shared secret key
             sharedKey = power(RPV, senderPrivate, p);
             System.out.println("Sender's calculated shared key: " + sharedKey);
-
-            //sending_socket.setSoTimeout(0);
 
             // Now proceed with audio data transmission
             AudioRecorder recorder = new AudioRecorder();
@@ -204,7 +200,6 @@ public class AudioSenderThread implements Runnable{
         }
     }
 
-
     //Socket 2
     public static void printMatrix(byte[][][] matrix) {
         for (int i = 0; i < matrix.length; i++) {
@@ -215,7 +210,7 @@ public class AudioSenderThread implements Runnable{
                     System.out.print("  null ");
                 }
             }
-            System.out.println(); // Move to the next row
+            System.out.println();
         }
     }
 
@@ -225,7 +220,7 @@ public class AudioSenderThread implements Runnable{
 
         InetAddress clientIP = null;
         try {
-            clientIP = InetAddress.getByName("139.222.97.225"); // CHANGE to client IP
+            clientIP = InetAddress.getByName("139.222.97.225");
         } catch (UnknownHostException e) {
             System.out.println("ERROR: TextSender: Could not find client IP");
             e.printStackTrace();
@@ -407,7 +402,7 @@ public class AudioSenderThread implements Runnable{
 
     public void run () {
 
-        datagramSocket1attempt();
+        datagramSocket1();
 
     }
 }

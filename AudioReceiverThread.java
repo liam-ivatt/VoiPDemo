@@ -38,15 +38,14 @@ public class AudioReceiverThread implements Runnable{
         // Diffie-Hellman Parameters
         long p = 104729;                            // Larger prime number
         long g = 12345;                             // Larger base
-        long receiverPrivate = 9876;                // Receiver's Priv Key
-        long R1;                                    // Sender's public value
-        long R2 = power(g, receiverPrivate, p);     // Receiver's public value
+        long receiverPrivate = 9876;                // Receiver's Private Key
+        long SPV;                                    // Sender's public value
+        long RPV = power(g, receiverPrivate, p);     // Receiver's public value
         long sharedKey = 0;                         // Shared secret key
 
         DatagramSocket receiving_socket = null;
         try {
             receiving_socket = new DatagramSocket(PORT);
-            //receiving_socket.setSoTimeout(10000);
 
             AudioPlayer player = new AudioPlayer();
             byte[] previousValidPacket = null;
@@ -55,46 +54,44 @@ public class AudioReceiverThread implements Runnable{
             byte[] buffer = new byte[512];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
             receiving_socket.receive(packet);
-            R1 = Long.parseLong(new String(packet.getData()).trim());
+            SPV = Long.parseLong(new String(packet.getData()).trim());
 
             // Send receiver's public value (R2) back to the sender
             InetAddress senderAddress = packet.getAddress();
             int senderPort = packet.getPort();
-            String R2String = String.valueOf(R2);
+            String R2String = String.valueOf(RPV);
             DatagramPacket responsePacket = new DatagramPacket(R2String.getBytes(), R2String.length(), senderAddress, senderPort);
             receiving_socket.send(responsePacket);
 
             // Calculate shared secret key
-            sharedKey = power(R1, receiverPrivate, p);
+            sharedKey = power(SPV, receiverPrivate, p);
             System.out.println("Receiver's calculated shared key: " + sharedKey);
 
-            //receiving_socket.setSoTimeout(500);
-
-            int recDebug = 1;
+            int receiverDebug = 1;
             while (true) {
                 try {
-                    buffer = new byte[512 + 4];         // With Checksum Header
+                    buffer = new byte[512 + 4]; // + Checksum Header
                     packet = new DatagramPacket(buffer, buffer.length);
                     receiving_socket.setSoTimeout(500);
                     receiving_socket.receive(packet);
 
                     byte[] block = packet.getData();
 
-                    // Generate the same pseudo-random mask based on the shared key
-                    byte[] mask = new byte[block.length];
-                    for (int i = 0; i < mask.length; i++) {
-                        mask[i] = (byte) ((sharedKey * (i + 1) * 37) % 256); // Enhanced randomness
+                    // Generate the same pseudo-random data based on the shared key
+                    byte[] randomData = new byte[block.length];
+                    for (int i = 0; i < randomData.length; i++) {
+                        randomData[i] = (byte) ((sharedKey * (i + 1) * 37) % 256);
                     }
 
-                    System.out.println("Receiver Encrypted " + recDebug + ": " + Arrays.toString(block));
+                    System.out.println("Receiver Encrypted " + receiverDebug + ": " + Arrays.toString(block));
 
-                    // Decrypt the block using the mask
+                    // Decrypt the block using the random data
                     for (int i = 0; i < block.length; i++) {
-                        block[i] = (byte) (block[i] ^ mask[i]);
+                        block[i] = (byte) (block[i] ^ randomData[i]);
                     }
 
-                    System.out.println("Receiver Decrypted " + recDebug + ": " + Arrays.toString(block));
-                    recDebug++;
+                    System.out.println("Receiver Decrypted " + receiverDebug + ": " + Arrays.toString(block));
+                    receiverDebug++;
 
                     // Extract checksum from header (first 4 bytes)
                     int receivedChecksum = ((block[0] & 0xFF) << 24) |
@@ -139,13 +136,13 @@ public class AudioReceiverThread implements Runnable{
         }
     }
 
-    public static void datagramReceived1attempt() {
+    public static void datagramReceived1NoAuth() {
         int PORT = 55555;
 
         // Diffie-Hellman Parameters
         long p = 104729;                            // Larger prime number
         long g = 12345;                             // Larger base
-        long receiverPrivate = 9876;                // Receiver's Priv Key
+        long receiverPrivate = 9876;                // Receiver's Private Key
         long R1;                                    // Sender's public value
         long R2 = power(g, receiverPrivate, p);     // Receiver's public value
         long sharedKey = 0;                         // Shared secret key
@@ -153,7 +150,6 @@ public class AudioReceiverThread implements Runnable{
         DatagramSocket receiving_socket = null;
         try {
             receiving_socket = new DatagramSocket(PORT);
-            //receiving_socket.setSoTimeout(10000);
 
             AudioPlayer player = new AudioPlayer();
 
@@ -174,12 +170,9 @@ public class AudioReceiverThread implements Runnable{
             sharedKey = power(R1, receiverPrivate, p);
             System.out.println("Receiver's calculated shared key: " + sharedKey);
 
-            //receiving_socket.setSoTimeout(500);
-
-
             while (true) {
                 try {
-                    buffer = new byte[512];         // Without Checksum Header
+                    buffer = new byte[512];
                     packet = new DatagramPacket(buffer, buffer.length);
                     receiving_socket.setSoTimeout(500);
                     receiving_socket.receive(packet);
@@ -189,24 +182,18 @@ public class AudioReceiverThread implements Runnable{
                     // Generate the same pseudo-random mask based on the shared key
                     byte[] mask = new byte[block.length];
                     for (int i = 0; i < mask.length; i++) {
-                        mask[i] = (byte) ((sharedKey * (i + 1) * 37) % 256); // Enhanced randomness
+                        mask[i] = (byte) ((sharedKey * (i + 1) * 37) % 256);
                     }
-
-
 
                     // Decrypt the block using the mask
                     for (int i = 0; i < block.length; i++) {
                         block[i] = (byte) ((byte) (block[i] ^ mask[i]) * 1.5);
                     }
 
-
-
-
                     // Now directly play the decrypted audio data
                     byte[] audioData = block;
 
                     player.playBlock(audioData);
-
 
                 } catch (IOException e) {
                     System.err.println("Error receiving packet: " + e.getMessage());
@@ -223,7 +210,6 @@ public class AudioReceiverThread implements Runnable{
         }
     }
 
-
     //Socket 2
     public static void printMatrix(byte[][][] matrix) {
         for (int i = 0; i < matrix.length; i++) {
@@ -234,7 +220,7 @@ public class AudioReceiverThread implements Runnable{
                     System.out.print("  null ");
                 }
             }
-            System.out.println(); // Move to the next row
+            System.out.println();
         }
     }
 
@@ -348,7 +334,7 @@ public class AudioReceiverThread implements Runnable{
 
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
-                        // Wait until the jitter buffer has enough packets
+
                         synchronized (jitterBuffer) {
                             while (jitterBuffer.size() < jBufferSize) {
                                 jitterBuffer.wait(10);
@@ -369,7 +355,7 @@ public class AudioReceiverThread implements Runnable{
 
                             // If the packet is the expected one, process it
                             if (packetNumber == expectedPacketNumber) {
-                                jitterBuffer.poll(); // Remove the packet from the buffer
+                                jitterBuffer.poll(); // Remove packet from buffer
 
                                 byte[] audioData = new byte[packet.getLength() - 4];
                                 packetBuffer.get(audioData);
@@ -400,7 +386,7 @@ public class AudioReceiverThread implements Runnable{
                                     expectedPacketNumber++;
                                 }
                             } else {
-                                // If the packet is a duplicate or old, remove
+                                // If packet duplicate or old, remove
                                 jitterBuffer.poll();
                                 System.out.println("Discarding duplicate or old packet: " + packetNumber);
                             }
@@ -408,7 +394,7 @@ public class AudioReceiverThread implements Runnable{
 
                     } catch (InterruptedException e) {
                         System.out.println("Playback thread interrupted: " + e.getMessage());
-                        Thread.currentThread().interrupt(); // Restore the interrupted status
+                        Thread.currentThread().interrupt();
                     } catch (IOException e) {
                         System.out.println("Error playing audio block: " + e.getMessage());
                     }
@@ -416,7 +402,6 @@ public class AudioReceiverThread implements Runnable{
             });
             playbackThread.start();
 
-            // Main loop to receive packets
             while (true) {
                 try {
                     byte[] buffer = new byte[bufferSize];
@@ -434,7 +419,7 @@ public class AudioReceiverThread implements Runnable{
                     // Add the packet to the jitter buffer
                     synchronized (jitterBuffer) {
                         jitterBuffer.add(packet);
-                        jitterBuffer.notifyAll(); // Notify playback thread
+                        jitterBuffer.notifyAll();
                     }
 
                 } catch (SocketTimeoutException e) {
@@ -444,7 +429,6 @@ public class AudioReceiverThread implements Runnable{
                     break;
                 }
             }
-
             playbackThread.interrupt();
             playbackThread.join();
 
@@ -466,11 +450,11 @@ public class AudioReceiverThread implements Runnable{
             byte[] previousValidPacket = null;
 
             while (true) {
-                byte[] buffer = new byte[512 + 4]; // 4 bytes for checksum header
+                byte[] buffer = new byte[512 + 4];// + checksum header
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                 receiving_socket.receive(packet);
 
-                // Decrypt the entire packet (header + audio data)
+                // Decrypt the entire packet (+ header)
                 byte[] packet2 = ByteBuffer.wrap(packet.getData()).array();
 
                 // Extract checksum from header
@@ -490,10 +474,10 @@ public class AudioReceiverThread implements Runnable{
                     byte[] audioData = new byte[packet2.length - 4]; // Exclude header
                     System.arraycopy(packet2, 4, audioData, 0, audioData.length);
                     player.playBlock(audioData);
-                    previousValidPacket = audioData; // Store valid packet
+                    previousValidPacket = audioData;
                 } else if (previousValidPacket != null) {
                     System.out.println("Checksum failed. Playing previous valid packet.");
-                    player.playBlock(previousValidPacket); // Play previous valid packet
+                    player.playBlock(previousValidPacket);
                 } else {
                     System.out.println("Checksum failed. No previous valid packet available.");
                 }
@@ -574,54 +558,50 @@ public class AudioReceiverThread implements Runnable{
 
         }
 
-//        System.out.println("""
-//
-//                        TOTAL PACKETS RECEIVED
-//
-//                """);
-//
-//        System.out.println(tally);
-//
-//
-//        System.out.println("""
-//
-//                        ALL MISSED PACKETS
-//
-//                """);
-//
-//        for(String s : burst){
-//            System.out.println(s);
-//        }
-//
-//        System.out.println("""
-//
-//                        ALL OUT OF ORDER PACKETS
-//
-//                """);
-//
-//        for (String s : outOfOrder) {
-//            System.out.println(s);
-//        }
-//
-//
-//        System.out.println("""
-//
-//                        %PACKET LOSS
-//
-//                """);
+        System.out.println("""
+
+                        TOTAL PACKETS RECEIVED
+
+                """);
+
+        System.out.println(tally);
+
+
+        System.out.println("""
+
+                        ALL MISSED PACKETS
+
+                """);
+
+        for(String s : burst){
+            System.out.println(s);
+        }
+
+        System.out.println("""
+
+                        ALL OUT OF ORDER PACKETS
+
+                """);
+
+        for (String s : outOfOrder) {
+            System.out.println(s);
+        }
+
+
+        System.out.println("""
+
+                        %PACKET LOSS
+
+                """);
 
 
         System.out.println((((1000 - tally)/1000)*100) + "%" );
-
-
-        //Close the socket
         receiving_socket.close();
-        //***************************************************
     }
 
     public void run (){
 
-        datagramReceived1attempt();
+        datagramReceived1();
 
     }
 }
