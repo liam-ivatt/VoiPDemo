@@ -54,7 +54,7 @@ public class AudioSenderThread implements Runnable{
         long sharedKey = 0;                         // Shared secret key
 
         try {
-            InetAddress clientIP = InetAddress.getByName("139.222.97.225");
+            InetAddress clientIP = InetAddress.getByName("139.222.98.253");
             DatagramSocket sending_socket = new DatagramSocket();
 
             Thread.sleep(5000);
@@ -138,14 +138,14 @@ public class AudioSenderThread implements Runnable{
 
         // Diffie-Hellman Parameters
         long p = 104729;                            // Larger prime number
-        long g = 12345000;                             // Larger base
+        long g = 12345;                             // Larger base
         long senderPrivate = 6789;                  // Sender's private key
         long SPV = power(g, senderPrivate, p);       // Sender's public value
         long RPV;                                    // Receiver's public value
         long sharedKey = 0;                         // Shared secret key
 
         try {
-            InetAddress clientIP = InetAddress.getByName("localhost");
+            InetAddress clientIP = InetAddress.getByName("139.222.98.253");
             DatagramSocket sending_socket = new DatagramSocket();
 
             Thread.sleep(5000);
@@ -220,7 +220,7 @@ public class AudioSenderThread implements Runnable{
 
         InetAddress clientIP = null;
         try {
-            clientIP = InetAddress.getByName("139.222.97.225");
+            clientIP = InetAddress.getByName("localhost");
         } catch (UnknownHostException e) {
             System.out.println("ERROR: TextSender: Could not find client IP");
             e.printStackTrace();
@@ -402,7 +402,7 @@ public class AudioSenderThread implements Runnable{
 
     public void run () {
 
-        datagramSocket1();
+        datagramSocket1NoAuth();
 
     }
 }

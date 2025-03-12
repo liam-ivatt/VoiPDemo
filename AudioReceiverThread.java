@@ -601,7 +601,7 @@ public class AudioReceiverThread implements Runnable{
 
     public void run (){
 
-        datagramReceived1();
+        datagramReceived1NoAuth();
 
     }
 }
