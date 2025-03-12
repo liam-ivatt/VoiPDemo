@@ -12,8 +12,6 @@ import java.util.*;
 public class AudioReceiverThread implements Runnable{
 
     static DatagramSocket receiving_socket;
-    static final byte[] XOR_KEY2 = {0x1A, 0x2B, 0x3C, 0x4D, 0x5E, 0x6F, 0x70};
-    static final int SHIFT = 250;
 
     public void start(){
         Thread thread = new Thread(this);
@@ -34,7 +32,7 @@ public class AudioReceiverThread implements Runnable{
         return result;
     }
 
-    public static void datagramReceived1Goated() {
+    public static void datagramReceived1() {
         int PORT = 55555;
 
         // Diffie-Hellman Parameters
@@ -72,7 +70,7 @@ public class AudioReceiverThread implements Runnable{
 
             //receiving_socket.setSoTimeout(500);
 
-            int joob = 1;
+            int recDebug = 1;
             while (true) {
                 try {
                     buffer = new byte[512 + 4];         // With Checksum Header
@@ -88,15 +86,15 @@ public class AudioReceiverThread implements Runnable{
                         mask[i] = (byte) ((sharedKey * (i + 1) * 37) % 256); // Enhanced randomness
                     }
 
-                    System.out.println("Receiver Encrypted " + joob + ": " + Arrays.toString(block));
+                    System.out.println("Receiver Encrypted " + recDebug + ": " + Arrays.toString(block));
 
                     // Decrypt the block using the mask
                     for (int i = 0; i < block.length; i++) {
                         block[i] = (byte) (block[i] ^ mask[i]);
                     }
 
-                    System.out.println("Receiver Decrypted " + joob + ": " + Arrays.toString(block));
-                    joob++;
+                    System.out.println("Receiver Decrypted " + recDebug + ": " + Arrays.toString(block));
+                    recDebug++;
 
                     // Extract checksum from header (first 4 bytes)
                     int receivedChecksum = ((block[0] & 0xFF) << 24) |
@@ -155,7 +153,7 @@ public class AudioReceiverThread implements Runnable{
         }
     }
 
-    public static void datagramReceived2Goated() {
+    public static void datagramReceived2() {
         int PORT = 55555;
 
         try {
@@ -247,7 +245,7 @@ public class AudioReceiverThread implements Runnable{
         return true;
     }
 
-    public static void datagramReceived3Goated() {
+    public static void datagramReceived3() {
         int PORT = 55555;
         int bufferSize = 512;
         int jBufferSize = 10;
@@ -374,7 +372,7 @@ public class AudioReceiverThread implements Runnable{
     }
 
     //Socket 4
-    public static void datagramReceived4Goated() {
+    public static void datagramReceived4() {
         int PORT = 55555;
 
         try {
@@ -538,7 +536,7 @@ public class AudioReceiverThread implements Runnable{
 
     public void run (){
 
-        datagramReceived3Goated();
+        datagramReceived4();
 
     }
 }

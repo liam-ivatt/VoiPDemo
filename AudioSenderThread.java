@@ -22,9 +22,6 @@ import java.util.Arrays;
 public class AudioSenderThread implements Runnable{
 
     static DatagramSocket sending_socket;
-    static final byte[] XOR_KEY2 = {0x1A, 0x2B, 0x3C, 0x4D, 0x5E, 0x6F, 0x70};
-    static final int SHIFT = 250;
-
 
     public void start(){
         Thread thread = new Thread(this);
@@ -45,15 +42,15 @@ public class AudioSenderThread implements Runnable{
         return result;
     }
 
-    public static void datagramSocket1Goated() {
+    public static void datagramSocket1() {
         int PORT = 55555;
 
         // Diffie-Hellman Parameters
         long p = 104729;                            // Larger prime number
         long g = 12345;                             // Larger base
         long senderPrivate = 6789;                  // Sender's private key
-        long R1 = power(g, senderPrivate, p);       // Sender's public value
-        long R2;                                    // Receiver's public value
+        long SPV = power(g, senderPrivate, p);       // Sender's public value
+        long RPV;                                    // Receiver's public value
         long sharedKey = 0;                         // Shared secret key
 
         try {
@@ -64,7 +61,7 @@ public class AudioSenderThread implements Runnable{
             //sending_socket.setSoTimeout(5000);
 
             // Send sender's public value (R1) to the receiver
-            String R1String = String.valueOf(R1);
+            String R1String = String.valueOf(SPV);
             DatagramPacket packet = new DatagramPacket(R1String.getBytes(), R1String.length(), clientIP, PORT);
             sending_socket.send(packet);
 
@@ -72,10 +69,10 @@ public class AudioSenderThread implements Runnable{
             byte[] buffer = new byte[512];
             packet = new DatagramPacket(buffer, buffer.length);
             sending_socket.receive(packet);
-            R2 = Long.parseLong(new String(packet.getData()).trim());
+            RPV = Long.parseLong(new String(packet.getData()).trim());
 
             // Calculate shared secret key
-            sharedKey = power(R2, senderPrivate, p);
+            sharedKey = power(RPV, senderPrivate, p);
             System.out.println("Sender's calculated shared key: " + sharedKey);
 
             //sending_socket.setSoTimeout(0);
@@ -83,7 +80,7 @@ public class AudioSenderThread implements Runnable{
             // Now proceed with audio data transmission
             AudioRecorder recorder = new AudioRecorder();
 
-            int bob = 1;
+            int senderDebug = 1;
 
             while (true) {
                 try {
@@ -96,28 +93,28 @@ public class AudioSenderThread implements Runnable{
                     }
 
                     // Create packet with checksum header
-                    byte[] packetData = new byte[block.length + 4]; // 4 bytes for checksum header
-                    packetData[0] = (byte) (checksum >> 24);        // First byte of checksum
-                    packetData[1] = (byte) (checksum >> 16);        // Second byte of checksum
-                    packetData[2] = (byte) (checksum >> 8);         // Third byte of checksum
-                    packetData[3] = (byte) checksum;                // Fourth byte of checksum
+                    byte[] packetData = new byte[block.length + 4]; // 4 for Checksum
+                    packetData[0] = (byte) (checksum >> 24);        // First byte
+                    packetData[1] = (byte) (checksum >> 16);        // Second byte
+                    packetData[2] = (byte) (checksum >> 8);         // Third byte
+                    packetData[3] = (byte) checksum;                // Fourth byte
                     System.arraycopy(block, 0, packetData, 4, block.length);
 
-                    System.out.println("Sender Before Encryption " + bob + ": " + Arrays.toString(packetData));
+                    System.out.println("Sender Before Encryption " + senderDebug + ": " + Arrays.toString(packetData));
 
-                    // Generate a stronger pseudo-random mask based on the shared key
-                    byte[] mask = new byte[packetData.length];
-                    for (int i = 0; i < mask.length; i++) {
-                        mask[i] = (byte) ((sharedKey * (i + 1) * 37) % 256); // Enhanced randomness
+                    // Generate stronger pseudo-random data based on the shared key
+                    byte[] randomData = new byte[packetData.length];
+                    for (int i = 0; i < randomData.length; i++) {
+                        randomData[i] = (byte) ((sharedKey * (i + 1) * 37) % 256); // Enhanced randomness
                     }
 
                     // Encrypt the packet using the mask
                     for (int i = 0; i < packetData.length; i++) {
-                        packetData[i] = (byte) (packetData[i] ^ mask[i]);
+                        packetData[i] = (byte) (packetData[i] ^ randomData[i]);
                     }
 
-                    System.out.println("Sender After Encryption " + bob + ": " + Arrays.toString(packetData));
-                    bob++;
+                    System.out.println("Sender After Encryption " + senderPrivate + ": " + Arrays.toString(packetData));
+                    senderDebug++;
 
                     // Send the encrypted packet
                     packet = new DatagramPacket(packetData, packetData.length, clientIP, PORT);
@@ -150,7 +147,7 @@ public class AudioSenderThread implements Runnable{
         }
     }
 
-    public static void datagramSocket2Goated() {
+    public static void datagramSocket2() {
         int PORT = 55555;
         int packetSequence = 0; // Global packet counter that increments with each packet
 
@@ -248,7 +245,7 @@ public class AudioSenderThread implements Runnable{
     }
 
     //Socket 3
-    public static void datagramSocket3Goated(){
+    public static void datagramSocket3(){
         int PORT = 55555;
 
         InetAddress clientIP = null;
@@ -304,7 +301,7 @@ public class AudioSenderThread implements Runnable{
     }
 
     //Socket 4
-    public static void datagramSocket4Goated() {
+    public static void datagramSocket4() {
         int PORT = 55555;
 
         try {
@@ -338,7 +335,7 @@ public class AudioSenderThread implements Runnable{
 
     public void run () {
 
-        datagramSocket3Goated();
+        datagramSocket4();
 
     }
 }
